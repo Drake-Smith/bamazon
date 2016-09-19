@@ -12,6 +12,7 @@ var connection = mysql.createConnection({
 })
 connection.connect(function(err) {
 	if (err) throw err;
+	displayTable(); //starts the program  
 })
 
 console.log("");
@@ -30,9 +31,9 @@ var displayTable = function(){
 		var productsArr = []; //will be array containing the table data
 		howManyProducts = res.length;
 		for (var i = 0; i < res.length; i++){ //push data into the productsArr
-			productsArr.push([res[i].ProductName, "$" + res[i].Price, res[i].ItemID, res[i].StockQuantity]);
+			productsArr.push([ res[i].ItemID, res[i].ProductName, res[i].DepartmentName, "$" + res[i].Price, res[i].StockQuantity]);
 		}
-		console.table(['Product', 'Price', 'ID', "Quantity"], productsArr); //populate the table 
+		console.table(['ID', 'Product', 'Department', 'Price', "Quantity"], productsArr); //populate the table 
 		orderPage();
 	})
 }
@@ -44,7 +45,7 @@ var orderPage = function(){
 		message: "What is the ID of the product you wish to purchase?",
 		validate: function(value) {
 			//validation checks ID number to see if it exists
-			if (parseInt(value) > howManyProducts || isNaN(value) == true){ 
+			if (parseInt(value) > howManyProducts || parseInt(value) < 1 || isNaN(value) == true){ 
 				return false;
 			} else {
 				return true;
@@ -55,7 +56,7 @@ var orderPage = function(){
 		type: "input",
 		message: "How many units of the product do you wish to purchase?",
 		validate: function(value) {
-			if (isNaN(value) == true) { //validation
+			if (isNaN(value) == true || parseInt(value) <= 0) { //validation
 				return false;
 			} else {
 				return true;
@@ -93,6 +94,7 @@ var processOrder = function(id, quantity){  //updates stock unit amount in MySQL
 var calculatePrice = function(id, quantity){  //determines the total cost of purchase
 	connection.query('SELECT * FROM Products WHERE ItemID = ?', [id], function(err, res) {
 		var orderTotal = quantity * res[0].Price;
+		addCostToDB(orderTotal, res[0].DepartmentName);
 		console.log("**********************************************");
 		console.log("Here are your order details.");
 		console.log("Order: " + res[0].ProductName);
@@ -101,6 +103,12 @@ var calculatePrice = function(id, quantity){  //determines the total cost of pur
 		console.log("**********************************************");
 		orderAgain();
 	})		
+}
+
+var addCostToDB = function(total, department) {
+	connection.query('UPDATE Departments SET ? WHERE ?', [{TotalSales: total}, {DepartmentName: department}], function(err, res) {
+	})
+
 }
 
 var orderAgain = function(){  //prompts if you want to make another order
@@ -119,5 +127,5 @@ var orderAgain = function(){  //prompts if you want to make another order
 	})
 }
 
-displayTable(); //starts the program  
+
 
