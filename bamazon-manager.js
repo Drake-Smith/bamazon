@@ -22,7 +22,7 @@ console.log("            BAMazon Manager Portal            ");
 console.log("**********************************************");
 console.log("");
 
-var homeScreen = function(){  //prompts if you want to make another order
+var homeScreen = function(){  //main menu page
 	inquirer.prompt([{
 		name: "options",
 		type: "list",
@@ -38,8 +38,6 @@ var homeScreen = function(){  //prompts if you want to make another order
 		switch(answer.options){
 			case "View Products for Sale":
 				viewProducts();
-				//displayTable();
-				//homeScreen();
 			break;
 
 			case "View Low Inventory":
@@ -62,7 +60,7 @@ var homeScreen = function(){  //prompts if you want to make another order
 	})
 }
 
-var displayTable = function() {
+var addInventory = function() {
 	connection.query('SELECT * FROM Products' , function(err, res) {
 		if (err) throw err;
 		var productsArr = []; //will be array containing the table data
@@ -72,6 +70,7 @@ var displayTable = function() {
 		}
 		console.log("");
 		console.table(['ID', 'Product', 'Department', 'Price', "Quantity"], productsArr); //populate the table 
+		inventoryPrompt(); 
 	})
 }
 
@@ -85,13 +84,11 @@ var viewProducts = function() { //view table of all the products
 		}
 		console.log("");
 		console.table(['ID', 'Product', 'Department', 'Price', "Quantity"], productsArr); //populate the table 
-		homeScreen();
+		homeScreen(); //back to home menu
 	})
-	// displayTable();
-	// homeScreen();
 }
 
-var viewInventory = function() {
+var viewInventory = function() {  //display what items have less than 20 items in stock
 	connection.query('SELECT * FROM Products WHERE StockQuantity < 20', function(err, res) {
 		if (err) throw err;
 		var lowInventory = [];
@@ -104,19 +101,7 @@ var viewInventory = function() {
 	})
 }
 
-var addInventory = function() {
-	
-	connection.query('SELECT * FROM Products' , function(err, res) {
-		if (err) throw err;
-		var productsArr = []; //will be array containing the table data
-		howManyProducts = res.length;
-		for (var i = 0; i < res.length; i++){ //push data into the productsArr
-			productsArr.push([res[i].ItemID, res[i].ProductName, res[i].DepartmentName, "$" + res[i].Price, res[i].StockQuantity]);
-		}
-		console.log("");
-		console.table(['ID', 'Product', 'Department', 'Price', "Quantity"], productsArr); //populate the table 
-	})
-
+var inventoryPrompt = function() { 
 	inquirer.prompt([{
 		name: "id",
 		type: "input",
@@ -143,12 +128,14 @@ var addInventory = function() {
 		}
 	}]).then(function(answer) {
 		 
-		connection.query('SELECT StockQuantity FROM Products WHERE ?', [{ItemID: answer.id}], function(err, res) {
-				console.log("RES: " + res[0].StockQuantity);
+		connection.query('SELECT StockQuantity FROM Products WHERE ?', [{ItemID: answer.id}], function(err, res) { //finds the item where user will add inventory
+				//console.log("RES: " + res[0].StockQuantity);
 				newQuantity = parseInt(res[0].StockQuantity) + parseInt(answer.quantity);
-				console.log("new wuantity: " + newQuantity);
+				console.log("**************************************");
+				console.log("New Stock Quantity: " + newQuantity);
+				console.log("**************************************");
 				
-				connection.query('UPDATE Products SET ? WHERE ?', [{
+				connection.query('UPDATE Products SET ? WHERE ?', [{  //updates MySql with the new amount of stock that user inputed
 					StockQuantity: newQuantity,
 				}, {
 					ItemID: answer.id
@@ -157,7 +144,7 @@ var addInventory = function() {
 					homeScreen();
 				})
 		})
-	})
+	})		
 }
 
 var addProduct = function() {
@@ -192,7 +179,7 @@ var addProduct = function() {
             }
         }
     }]).then(function(answer) {
-        connection.query("INSERT INTO Products SET ?", {
+        connection.query("INSERT INTO Products SET ?", {   //sets the user inputed info into MySQL
             ProductName: answer.product,
             DepartmentName: answer.department,
             Price: answer.price,

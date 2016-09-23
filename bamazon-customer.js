@@ -22,30 +22,28 @@ console.log("         Here are all of our products available for purchase.");
 console.log("********************************************************************");
 console.log("");
 
-var howManyProducts = 0;
-
-
+var howMany;
 var displayTable = function(){
 	connection.query('SELECT * FROM Products' , function(err, res) {
 		if (err) throw err;
-		var productsArr = []; //will be array containing the table data
-		howManyProducts = res.length;
+		var productsArr = []; //empty array which will contain the table data
+		howMany = res.length;  //assign num of products to var howMany for validation later
 		for (var i = 0; i < res.length; i++){ //push data into the productsArr
-			productsArr.push([ res[i].ItemID, res[i].ProductName, res[i].DepartmentName, "$" + res[i].Price, res[i].StockQuantity]);
+			productsArr.push([ res[i].ItemID, res[i].ProductName, res[i].DepartmentName, "$" + res[i].Price]);
 		}
-		console.table(['ID', 'Product', 'Department', 'Price', "Quantity"], productsArr); //populate the table 
-		orderPage();
+		console.table(['ID', 'Product', 'Department', 'Price'], productsArr); //populate the table 
+		orderPage(howMany);
 	})
 }
 
-var orderPage = function(){
+var orderPage = function(num){
 	inquirer.prompt([{
 		name: "id",
 		type: "input",
 		message: "What is the ID of the product you wish to purchase?",
 		validate: function(value) {
 			//validation checks ID number to see if it exists
-			if (parseInt(value) > howManyProducts || parseInt(value) < 1 || isNaN(value) == true){ 
+			if (parseInt(value) >  num || parseInt(value) < 1 || isNaN(value) == true){  //makes sure input is valid
 				return false;
 			} else {
 				return true;
@@ -70,7 +68,7 @@ var orderPage = function(){
 
 				if (answer.quantity > res[0].StockQuantity) {
 					console.log("Insufficient quantity in stock. Select fewer units or a different product.");
-					orderPage(); //bring you back to order screen
+					orderPage(num); //brings you back to order screen
 				} else {
 					//processOrder(res[0].ItemID, res[0].StockQuantity);
 					var stockLeft = res[0].StockQuantity - answer.quantity; //how many units are left after order
@@ -95,6 +93,7 @@ var calculatePrice = function(id, quantity){  //determines the total cost of pur
 	connection.query('SELECT * FROM Products WHERE ItemID = ?', [id], function(err, res) {
 		var orderTotal = quantity * res[0].Price;
 		addCostToDB(orderTotal, res[0].DepartmentName);
+
 		console.log("**********************************************");
 		console.log("Here are your order details.");
 		console.log("Order: " + res[0].ProductName);
@@ -105,8 +104,12 @@ var calculatePrice = function(id, quantity){  //determines the total cost of pur
 	})		
 }
 
-var addCostToDB = function(total, department) {
-	connection.query('UPDATE Departments SET ? WHERE ?', [{TotalSales: total}, {DepartmentName: department}], function(err, res) {
+var addCostToDB = function(total, department) {  
+	connection.query('SELECT * FROM Departments WHERE DepartmentName = ?', [department], function(err, res) { //finds sales info by department
+		var updateSales = parseInt(total) + parseInt(res[0].TotalSales);
+		//console.log("COST TO DB: " + updateSales);
+		connection.query('UPDATE Departments SET ? WHERE ?', [{TotalSales: updateSales}, {DepartmentName: department}], function(err, res) { //updates the total sales with new amount
+		})
 	})
 
 }

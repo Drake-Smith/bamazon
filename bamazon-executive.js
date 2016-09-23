@@ -50,13 +50,14 @@ var homeScreen = function(){  //prompts if you want to make another order
 	})
 }
 
-var viewSales = function() {
+var viewSales = function() {  //view the executive sales info
 	connection.query('SELECT * FROM Departments' , function(err, res) {
 		if (err) throw err;
 		var deptArr = []; //will be array containing the table data
-		//howManyProducts = res.length;
 		for (var i = 0; i < res.length; i++){ //push data into the productsArr
-			var profit = parseInt(res[i].TotalSales) - parseInt(res[i].OverheadCosts);
+
+			var profit = parseInt(res[i].TotalSales) - parseInt(res[i].OverheadCosts); //calculates how much profit made on item
+
 			deptArr.push([res[i].DepartmentID, res[i].DepartmentName, "$" + res[i].OverheadCosts, "$" + res[i].TotalSales, profit]);
 		}
 		console.log("");
